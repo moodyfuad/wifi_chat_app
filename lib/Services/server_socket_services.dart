@@ -4,15 +4,19 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:network_info_plus/network_info_plus.dart';
-import 'package:wifi_chat/data/constants/json_keys.dart';
-import 'package:wifi_chat/data/models/message_model.dart';
-import 'package:wifi_chat/data/models/model_types.dart';
-import 'package:wifi_chat/mini_games/x_o/models/x_o_invitation_model.dart';
 
 class ServerSocketServices {
-  ServerSocketServices() {
+  factory ServerSocketServices() => _instance;
+
+  static final ServerSocketServices _instance =
+      ServerSocketServices._internal();
+  ServerSocketServices._internal() {
     _initServer();
   }
+  List<void Function(dynamic object)> onObjectReceivedCallBacks = [];
+  List<void Function(Socket client)> onNewClientConnectedCallBacks = [];
+  List<void Function(Socket client)> onClientDisconnectedCallBacks = [];
+
   static const int port = 4040;
   String? host;
   ServerSocket? _serverSocket;
@@ -29,24 +33,26 @@ class ServerSocketServices {
   }
 
   Future<void> startServer({
-    // void Function(dynamic object)? onImageRequestReceived,
     void Function(dynamic object)? onObjectReceived,
     void Function(Socket client)? onNewClientConnected,
     void Function(Socket client)? onClientDisconnected,
   }) async {
     await _initServer();
     print('[+] Server : Server Listening on $host:$port');
-
+    if (onObjectReceived != null) {
+      onObjectReceivedCallBacks.add(onObjectReceived);
+    }
+    if (onNewClientConnected != null) {
+      onNewClientConnectedCallBacks.add(onNewClientConnected);
+    }
+    if (onClientDisconnected != null) {
+      onClientDisconnectedCallBacks.add(onClientDisconnected);
+    }
     _serverSocket?.listen(
-      (client) => _handelClientConnection(
-          client,
-          onObjectReceived,
-          // onImageRequestReceived,
-          onNewClientConnected,
-          onClientDisconnected),
+      (client) => _handelClientConnection(client),
       onDone: () {
         _serverSocket?.close();
-        print("server is closed");
+        print("[+] Server is closed");
       },
       onError: (error) {
         print("[+] Server Error(_serverSocket.listen): $error");
@@ -54,14 +60,11 @@ class ServerSocketServices {
     );
   }
 
-  void _handelClientConnection(
-      Socket client,
-      void Function(dynamic object)? onObjectReceived,
-      // void Function(dynamic object)? onImageRequestReceived,
-      void Function(Socket client)? onClientConnect,
-      void Function(Socket client)? onClientDisconnected) {
+  void _handelClientConnection(Socket client) {
     //^ invoke the callback Function
-    onClientConnect?.call(client);
+    for (var fun in onNewClientConnectedCallBacks) {
+      fun.call(client);
+    }
     print(
         "[+] Server: Client connected: ${client.remoteAddress.address}:${client.remotePort}");
     StringBuffer buffer = StringBuffer();
@@ -69,7 +72,7 @@ class ServerSocketServices {
     client.listen(
       (Uint8List data) {
         print(
-            "[+] Server : Data Received From ${client.remoteAddress.address}: ${utf8.decode(data)}");
+            "[+] Server : Data Received From ${client.remoteAddress.address}");
         print("[+] Server : Received data : ${utf8.decode(data)}");
         try {
           final stringData = String.fromCharCodes(data);
@@ -79,35 +82,26 @@ class ServerSocketServices {
             final jsonString = buffer.toString().trim();
             buffer.clear();
             final jsonData = jsonDecode(jsonString);
-            //* the data is message
-            if (jsonData[JsonKeys.modelType] == ModelTypes.xoInvitation.name) {
-              print("[+] Server : Data Received is Message");
-              final message = XOInvitationModel.fromJson(jsonData);
-              print('[+] Server($host): Received $jsonData');
-              // //* echo to the client
-              onObjectReceived?.call(message);
-            } else if (jsonData[JsonKeys.modelType] ==
-                ModelTypes.message.name) {
-              print("[+] Server : Data Received is Message");
-              final message = MessageModel.fromJson(jsonData);
-              print('[+] Server($host): Received $jsonData');
-              // //* echo to the client
-              onObjectReceived?.call(message);
+            for (var fun in onObjectReceivedCallBacks) {
+              fun.call(jsonData);
             }
           }
         } catch (e) {
-          print("Error decoding data: $e");
+          print("[+] Server : Error client.listen: $e");
         }
       },
       onDone: () {
         print(
             "Client disconnected: ${client.remoteAddress.address}:${client.remotePort}");
-
-        onClientDisconnected?.call(client);
+        for (var fun in onClientDisconnectedCallBacks) {
+          fun.call(client);
+        }
       },
       onError: (error) {
         print("[+] Server onError(client.listen): $error");
-        onClientDisconnected?.call(client);
+        for (var fun in onClientDisconnectedCallBacks) {
+          fun.call(client);
+        }
       },
     );
   }

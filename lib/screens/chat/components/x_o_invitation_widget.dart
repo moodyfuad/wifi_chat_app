@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' as Intl;
+import 'package:provider/provider.dart';
 import 'package:wifi_chat/mini_games/x_o/models/x_o_invitation_model.dart';
+import 'package:wifi_chat/providers/x_o_provider.dart';
 import 'package:wifi_chat/screens/chat/components/chat_components.dart';
 
 class XOInvitationWidget extends StatelessWidget {
@@ -57,7 +59,11 @@ class XOInvitationWidget extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
               ),
-              onPressed: () {},
+              onPressed: () {
+                if (isMyMessage) return;
+                Provider.of<XOProvider>(context, listen: false)
+                    .startGame(invitation: invitation);
+              },
               label: const Text(
                 "Play",
                 textAlign: TextAlign.center,
@@ -66,9 +72,9 @@ class XOInvitationWidget extends StatelessWidget {
                   color: Colors.deepPurple,
                 ),
               ),
-              icon: const Icon(
+              icon: Icon(
                 Icons.gamepad,
-                color: Colors.deepPurple,
+                color: isMyMessage ? Colors.blueGrey : Colors.deepPurple,
               ),
             ),
             Row(

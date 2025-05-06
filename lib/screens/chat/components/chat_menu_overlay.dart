@@ -35,8 +35,14 @@ class ChatMenuOverlay extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ElevatedButton.icon(
-            label: const Text("Invite To Paly XO"),
+          ElevatedButton(
+            child: const Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                mainAxisSize: MainAxisSize.max,
+                children: [
+                  Icon(Icons.gamepad_rounded),
+                  Text("Send invitation To Paly XO"),
+                ]),
             onPressed: () async {
               //todo: sent invitation messgage
 
@@ -44,7 +50,6 @@ class ChatMenuOverlay extends StatelessWidget {
                   .sendMessage(_makeInvitationMessage(context), user);
               Navigator.pop(context);
             },
-            icon: const Icon(Icons.gamepad_rounded),
           )
         ],
       ),

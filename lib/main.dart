@@ -8,6 +8,7 @@ import 'package:wifi_chat/Services/notification_services.dart';
 import 'package:wifi_chat/providers/chat_provider.dart';
 import 'package:wifi_chat/providers/discovery_provider.dart';
 import 'package:wifi_chat/providers/user_provider.dart';
+import 'package:wifi_chat/providers/x_o_provider.dart';
 import 'package:wifi_chat/view/Theme/custom_theme.dart';
 import 'package:wifi_chat/screens/login/login_page.dart';
 
@@ -28,6 +29,7 @@ void main() async {
       ChangeNotifierProvider<DiscoveryProvider>(
           create: (context) => DiscoveryProvider()),
       ChangeNotifierProvider<ChatProvider>(create: (context) => ChatProvider()),
+      ChangeNotifierProvider<XOProvider>(create: (context) => XOProvider()),
     ],
     builder: (context, child) => const MainApp(),
     // child: LoginPage(),

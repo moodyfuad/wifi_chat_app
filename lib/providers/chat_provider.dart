@@ -1,24 +1,27 @@
 import 'dart:io';
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import 'package:wifi_chat/Services/client_socket_services.dart';
 import 'package:wifi_chat/Services/notification_services.dart';
 import 'package:wifi_chat/Services/server_socket_services.dart';
+import 'package:wifi_chat/data/constants/json_keys.dart';
 import 'package:wifi_chat/data/models/chat_model.dart';
 import 'package:wifi_chat/data/models/message_model.dart';
 import 'package:wifi_chat/data/models/message_states.dart';
+import 'package:wifi_chat/data/models/model_types.dart';
 import 'package:wifi_chat/data/models/user_model.dart';
+import 'package:wifi_chat/mini_games/x_o/models/x_o_invitation_model.dart';
 
 class ChatProvider extends ChangeNotifier {
   final List<ClientSocketServices> clients = [];
   final ServerSocketServices _server = ServerSocketServices();
   String get myHost => _server.host ?? "No Host Yet";
   List<ChatModel> chats = [];
+  static int? inChatIndex;
 
   List<MessageModel> getUserMessages(UserModel user) {
-    int chatIndex = _getChatIndex(user.host);
+    int chatIndex = getChatIndex(user.host);
+    inChatIndex = chatIndex;
     if (chatIndex == -1) {
       print('[+] No Message With User ${user.name}');
       return [];
@@ -54,7 +57,7 @@ class ChatProvider extends ChangeNotifier {
   Future<void> startChat(UserModel withUser,
       {void Function()? onFailed}) async {
     int clientIndex = _getClientIindex(withUser.host);
-    int chatIndex = _getChatIndex(withUser.host);
+    int chatIndex = getChatIndex(withUser.host);
     //^ the user is new
     if (clientIndex == -1) {
       final client =
@@ -64,7 +67,7 @@ class ChatProvider extends ChangeNotifier {
         onConnectionFailed: _onConnectionFailed,
         onConnectionSuccess: (_) {
           clients.add(client);
-          if (chatIndex == -1) chats.add(_createChat(withUser));
+          if (chatIndex == -1) chats.add(ChatModel(withUser: withUser));
           success = true;
         },
       );
@@ -96,12 +99,12 @@ class ChatProvider extends ChangeNotifier {
     }
     //^ the client already exist
     else {
-      clients[clientIndex].sendMessage(message);
+      clients[clientIndex].sendMapped(message.toJson());
     }
   }
 
   void _addMyMessageToChats(MessageModel message) {
-    int chatIndex = _getChatIndex(message.receiverHost);
+    int chatIndex = getChatIndex(message.receiverHost);
     int messageIndex = _getMessageIndex(chatIndex, message.dateTime);
     if (chatIndex == -1) {
       print("[+] chat not found _addMyMessageToChats");
@@ -122,22 +125,21 @@ class ChatProvider extends ChangeNotifier {
   }
 
   void _onClientConnected(Socket client) async {
-    final int clientIndex = _getClientIindex(client.remoteAddress.address);
+    // final int clientIndex = _getClientIindex(client.remoteAddress.address);
+    if (clients.any((c) => c.host == client.remoteAddress.address)) {
+      return;
+    }
     //^ new client
-    if (clientIndex == -1) {
+    else {
       final newClient =
           ClientSocketServices(host: client.remoteAddress.address, name: '');
       await newClient.connect(
-        onConnectionFailed: _onConnectionFailed,
-        onConnectionSuccess: (client) {
-          clients.add(newClient);
-        },
-      );
+          onConnectionFailed: _onConnectionFailed,
+          onConnectionSuccess: (_) => clients.add(newClient));
     }
   }
 
   void _onClientDisconnected(Socket socket) {
-    //todo: checl the socket address
     int clientIndex = _getClientIindex(socket.remoteAddress.address);
     if (clientIndex == -1) return;
     try {
@@ -148,11 +150,10 @@ class ChatProvider extends ChangeNotifier {
   }
 
   void _onObjectReceived(dynamic object) {
-    switch (object) {
-      case MessageModel message:
-        _onMessageReceived(message);
-        break;
-      default:
+    if (object[JsonKeys.modelType] == ModelTypes.xoInvitation.name) {
+      _onMessageReceived(XOInvitationModel.fromJson(object));
+    } else if (object[JsonKeys.modelType] == ModelTypes.message.name) {
+      _onMessageReceived(MessageModel.fromJson(object));
     }
   }
 
@@ -165,10 +166,9 @@ class ChatProvider extends ChangeNotifier {
       _updateMyMessageStatus(message);
       //^ not my message
     } else {
-      int chatIndex = _getChatIndex(message.senderHost);
+      int chatIndex = getChatIndex(message.senderHost);
 
-      NotificationService()
-          .showNotification(title: message.senderName, body: message.content);
+      _showNotification(chatIndex, message);
       //^ if its new user
       if (chatIndex == -1) {
         print("[+] chat not found onMessageReceived");
@@ -177,7 +177,7 @@ class ChatProvider extends ChangeNotifier {
             port: ServerSocketServices.port,
             id: const Uuid().v1(),
             name: message.senderName);
-        var chat = _createChat(user);
+        var chat = ChatModel(withUser: user);
         chat.messages.add(message);
         chats.add(chat);
         startChat(user);
@@ -194,8 +194,15 @@ class ChatProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  _showNotification(int chatIndex, MessageModel message) {
+    if (inChatIndex != chatIndex) {
+      NotificationService()
+          .showNotification(title: message.senderName, body: message.content);
+    }
+  }
+
   void _updateMyMessageStatus(MessageModel message) {
-    int chatIndex = _getChatIndex(message.receiverHost);
+    int chatIndex = getChatIndex(message.receiverHost);
     for (MessageModel myMsg in chats[chatIndex].messages) {
       if (myMsg.messageStates != MessageStates.read &&
           myMsg.messageStates != message.messageStates) {
@@ -203,12 +210,14 @@ class ChatProvider extends ChangeNotifier {
       }
       if (myMsg.dateTime == message.dateTime) {
         myMsg.messageStates = message.messageStates;
+        if (message is XOInvitationModel && myMsg is XOInvitationModel) {
+          myMsg.state = message.state;
+        }
         break;
       }
     }
   }
 
-  //  onMessageReceived?.call(message);
   void _updateMessageStatusToRead(MessageModel message, UserModel user) {
     if (message.messageStates == MessageStates.read) {
       return;
@@ -250,21 +259,7 @@ class ChatProvider extends ChangeNotifier {
         .lastIndexWhere((msg) => msg.dateTime == messageDateTime);
   }
 
-  int _getChatIndex(String withUserHost) {
+  int getChatIndex(String withUserHost) {
     return chats.indexWhere((chat) => chat.withUser.host == withUserHost);
   }
 }
-
-UserModel _createUser(ClientSocketServices client) {
-  String id = _getNewId_TEST_();
-
-  return UserModel(
-      host: client.host, port: client.port, id: id, name: client.name);
-}
-
-ChatModel _createChat(UserModel user) {
-  String id = _getNewId_TEST_();
-  return ChatModel(id: id, withUser: user);
-}
-
-String _getNewId_TEST_() => Random().nextInt(1000).toString();

@@ -56,6 +56,7 @@ class ChatPage extends StatelessWidget {
     return Consumer2<ChatProvider, DiscoveryProvider>(
       builder: (context, chatPrv, discoveryPrv, child) {
         updateScrollPosition();
+        ChatProvider.inChatIndex = chatPrv.getChatIndex(user.host);
         return Scaffold(
           appBar: ChatCompomenets.getChatPageAppBar(context, user),
           body: Column(

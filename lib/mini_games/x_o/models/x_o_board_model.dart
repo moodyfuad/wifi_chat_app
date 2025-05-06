@@ -5,7 +5,8 @@ import 'package:wifi_chat/mini_games/x_o/models/x_o_peiceModel.dart';
 class XOBoardModel {
   List<XOPieceModel> board = List.generate(9, _generator);
   static XOPieceModel _generator(int index) =>
-      XOPieceModel(index: index, sample: XOPieceModel.noSample);
+      XOPieceModel(boardIndex: index, sample: XOPieceModel.noSample);
+
 
   int xMoves = 0;
   List<XOPieceModel> xPices =
@@ -26,62 +27,55 @@ class XOBoardModel {
     [2, 4, 6]
   ];
 
-  // move(XOPeicemodel player, int toIndex) {
-  //   switch (player.sample) {
-  //     case PiceSamples.x:
-  //       moveX(toIndex);
-  //     case PiceSamples.o:
-  //       moveO(toIndex);
-  //     case PiceSamples.none:
-  //       return;
-  //   }
-  // }
+  void reset(){
+    board = List.generate(9, _generator);
+    xMoves = 0;
+    oMoves = 0;
+    isXturn = true;
+  }
+  move(int toIndex) {
+    switch (isXturn) {
+      case true:
+        moveX(toIndex);
+      case false:
+        moveO(toIndex);
+    }
+  }
 
   moveO(int toIndex) {
+    if (isXturn) return;
     if (board[toIndex].sample != XOPieceModel.noSample) return;
     var pieceToMove = oPices[oMoves % 3];
     oMoves++;
     //^ clear the old place
-    if (pieceToMove.index != null) {
-      board[pieceToMove.index!] = XOPieceModel(sample: XOPieceModel.noSample);
+    if (pieceToMove.boardIndex != null) {
+      board[pieceToMove.boardIndex!] =
+          XOPieceModel(sample: XOPieceModel.noSample);
     }
     //^ update the player pieces
-    pieceToMove.index = toIndex;
+    pieceToMove.boardIndex = toIndex;
 
     //^ place the piece in the board
     board[toIndex] = pieceToMove;
-    // var pieceToMove = oPices[oMoves % 3];
-    // oMoves++;
-    // //^ place the piece in the board
-    // board[toIndex] = pieceToMove;
-    // board[toIndex].index = toIndex;
-    // //^ clear the old place
-    // if (pieceToMove.index != null) {
-    //   board[pieceToMove.index!].sample = XOPieceModel.noSample;
-    // }
-    // //^ update the player pieces
-    // oPices[(oMoves - 1) % 3].index = toIndex;
     isXturn = !isXturn;
   }
 
   moveX(int toIndex) {
+    if (!isXturn) return;
     if (board[toIndex].sample != XOPieceModel.noSample) return;
     var pieceToMove = xPices[xMoves % 3];
     xMoves++;
 
     //^ clear the old place
-    if (pieceToMove.index != null) {
-      board[pieceToMove.index!] = XOPieceModel(sample: XOPieceModel.noSample);
+    if (pieceToMove.boardIndex != null) {
+      board[pieceToMove.boardIndex!] =
+          XOPieceModel(sample: XOPieceModel.noSample);
     }
     //^ update the player pieces
-    pieceToMove.index = toIndex;
+    pieceToMove.boardIndex = toIndex;
     //^ place the piece in the board
     board[toIndex] = pieceToMove;
-    // board[toIndex].index = toIndex;
-    // if (pieceToMove.index != null) {
-    //   board[pieceToMove.index!].sample = XOPieceModel.noSample;
-    // }
-    // xPices[(oMoves - 1) % 3].index = toIndex;
+
     isXturn = !isXturn;
   }
 
@@ -97,4 +91,3 @@ class XOBoardModel {
     return null;
   }
 }
-

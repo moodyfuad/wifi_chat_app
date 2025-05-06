@@ -6,7 +6,6 @@ import 'package:path/path.dart' as path;
 import 'package:wifi_chat/Services/server_socket_services.dart';
 import 'package:wifi_chat/data/models/message_model.dart';
 import 'package:wifi_chat/data/models/user_model.dart';
-import 'package:wifi_chat/mini_games/x_o/models/x_o_invitation_model.dart';
 
 class ClientSocketServices {
   static const String imageRequestString = "Profileimagewkfnqi3242mo2id2942";
@@ -24,7 +23,7 @@ class ClientSocketServices {
     //* the receiver is the server on the other device
     try {
       _socket =
-          await Socket.connect(host, port, timeout: const Duration(seconds: 1));
+          await Socket.connect(host, port, timeout: const Duration(seconds: 2));
       print('[+] Connected to $host:$port');
       onConnectionSuccess(_socket!);
     } catch (error) {
@@ -33,16 +32,13 @@ class ClientSocketServices {
     }
   }
 
-  void sendMessage(MessageModel message,
+  //todo : convert the Message model to Map<String, dynamic>
+  void sendMapped(Map<String, dynamic> mappedObject,
       {void Function(dynamic error)? onError}) {
     try {
-      if (_socket == null) throw Exception('[+] Not connected to server');
-      final jsonData = switch (message) {
-        XOInvitationModel invi => invi.toJson(),
-        _ => message.toJson()
-      };
-      _socket!.write(jsonEncode(jsonData) + '\n'); // Add newline as delimiter
-      print("[+] Message sent from: ${message.senderName} to: $host");
+      if (_socket == null) throw Exception('[+] Client: Not connected to server');
+      _socket!.write(jsonEncode(mappedObject) + '\n'); // Add newline as delimiter
+      print("[+] Client sent mappedObject, to: $host");
     } catch (e) {
       onError?.call(e);
     }

@@ -18,6 +18,7 @@ class _XOGameMainPageState extends State<XOGameMainPage> {
       body: Center(
         child: SingleChildScrollView(
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Text(
@@ -25,7 +26,9 @@ class _XOGameMainPageState extends State<XOGameMainPage> {
                 style: TextStyle(fontSize: 24),
               ),
               const SizedBox(height: 20),
-              XOBoardWidget()
+              XOBoardWidget(
+                title: 'Title',
+              )
             ],
           ),
         ),

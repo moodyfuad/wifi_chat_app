@@ -12,6 +12,7 @@ class ContactPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    ChatProvider.inChatIndex = null;
     return Scaffold(
       appBar: getDiscoveryAppBar(title: 'Chats', context: context),
       body: SingleChildScrollView(

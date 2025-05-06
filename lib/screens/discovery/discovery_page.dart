@@ -12,8 +12,9 @@ class DiscoveryPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    ChatProvider.inChatIndex = null;
     return Scaffold(
-      appBar: getDiscoveryAppBar(title : 'Discover People', context: context),
+      appBar: getDiscoveryAppBar(title: 'Discover People', context: context),
       body: SingleChildScrollView(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
@@ -25,16 +26,14 @@ class DiscoveryPage extends StatelessWidget {
                 itemBuilder: (context, index) {
                   final user = value.users[index];
                   return GestureDetector(
-                    onTap: () => _navigateToChatPage(context, value, user),
-                    child: getChatCart(user: user, online: true)
-                  );
+                      onTap: () => _navigateToChatPage(context, value, user),
+                      child: getChatCart(user: user, online: true));
                 },
               ),
             ),
           ],
         ),
       ),
-      
     );
   }
 

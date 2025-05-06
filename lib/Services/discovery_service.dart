@@ -28,18 +28,17 @@ class DiscoveryService {
         print(
             '[-] Found unResolved : ${event.service?.name}, resolved : ${event.isServiceResolved}');
         try {
-          event.service!.resolve(discovery.serviceResolver);
+          await event.service!.resolve(discovery.serviceResolver);
         } catch (e) {
           print('[+] Error resolving ${event.service!.name}');
         }
       }
       if (event.type == BonsoirDiscoveryEventType.discoveryServiceResolved) {
-        print(
-            ' [+] Found Resolved : ${event.service?.name}');
+        print(' [+] Found Resolved : ${event.service?.name}');
         var service = (event.service as ResolvedBonsoirService);
         var user = await _createUser(service);
         onDiscoverd?.call(user);
-      // await socketServices.connectToServer((event.service as ResolvedBonsoirService).host!);
+        // await socketServices.connectToServer((event.service as ResolvedBonsoirService).host!);
       } else if (event.type == BonsoirDiscoveryEventType.discoveryServiceLost) {
         print('[-] Lost : ${event.service?.name}');
         onDissmesed?.call(event.service!);
@@ -57,30 +56,27 @@ class DiscoveryService {
     isDiscoveryOn = false;
   }
 
-  Future<UserModel> _createUser(ResolvedBonsoirService service) async{
-     final hostAsIp = await _resolveHostToIP(service.host!);
-     Uint8List? imagebytes = await _getImageFromServer(hostAsIp);
-      UserModel user = UserModel(
+  Future<UserModel> _createUser(ResolvedBonsoirService service) async {
+    final hostAsIp = await _resolveHostToIP(service.host!);
+    Uint8List? imagebytes = await _getImageFromServer(hostAsIp);
+    UserModel user = UserModel(
         host: hostAsIp,
         port: port,
         id: const Uuid().v1(),
         name: service.name,
         profileImage: imagebytes);
-      return user;
+    return user;
   }
 
   Future<Uint8List?> _getImageFromServer(String host) async {
-
     try {
-      final clientSocket = await Socket.connect(host, DiscoveryService.imagesPort,
+      final clientSocket = await Socket.connect(
+          host, DiscoveryService.imagesPort,
           timeout: const Duration(seconds: 3));
-      
 
       clientSocket.setOption(SocketOption.tcpNoDelay, true);
       await clientSocket.flush();
       BytesBuilder bytesBuilder = BytesBuilder();
-
-      //! List<Uint8List> uint8List = await _clientSocket!.toList();
       await for (var element in clientSocket) {
         bytesBuilder.add(element);
       }
@@ -93,7 +89,6 @@ class DiscoveryService {
       // clientSocket.close();
     }
   }
-  
 
   static Future<String> _resolveHostToIP(String host) async {
     try {

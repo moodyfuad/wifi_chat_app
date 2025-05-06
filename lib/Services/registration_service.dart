@@ -12,7 +12,7 @@ class RegistrationService {
   Future<void> regiser({required String name, Uint8List? imagebytes}) async {
     final service = _createService(name);
     if (imagebytes != null) {
-      hostImage(imagebytes);
+      _hostImage(imagebytes);
     }
 
     if (broadcast != null) await unregister();
@@ -43,7 +43,7 @@ class RegistrationService {
 
   static Map<String, String> _createAttri() {
     return {
-      'null': 'null',
+      'time': DateTime.now().toString(),
       'string': 'isString',
     };
   }
@@ -57,7 +57,7 @@ class RegistrationService {
     }
   }
 
-  Future<void> hostImage(Uint8List imageBytes) async {
+  Future<void> _hostImage(Uint8List imageBytes) async {
     final String? host = await NetworkInfo().getWifiIP();
 
     _serverSocket ??= await ServerSocket.bind(host, DiscoveryService.imagesPort,

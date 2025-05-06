@@ -13,4 +13,6 @@ class JsonKeys {
   static const String sendingAttmpts = 'sendingAttmpts';
   static const String gameType = 'gameType';
   static const String invitationState = 'invitationState';
+  static const String sample = 'sample';
+  static const String boardIndex = 'boardIndex';
 }
