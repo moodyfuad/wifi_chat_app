@@ -1,12 +1,11 @@
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:wifi_chat/mini_games/x_o/Pages/x_o_game_main_page.dart';
-import 'package:wifi_chat/mini_games/x_o/widgets/x_o_board_widget.dart';
 import 'package:wifi_chat/providers/chat_provider.dart';
 import 'package:wifi_chat/providers/x_o_provider.dart';
-import 'package:wifi_chat/screens/contacts/contact_page.dart';
-import 'package:wifi_chat/screens/discovery/discovery_page.dart';
+import 'package:wifi_chat/screens/contacts/contact_screen.dart';
+import 'package:wifi_chat/screens/discovery/discovery_screen.dart';
+import 'package:wifi_chat/x_o_game/screens/x_o_board_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -18,8 +17,8 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int index = 1;
   final List<Widget> pages = [
-    const ContactPage(),
-    const DiscoveryPage(),
+    const ContactScreen(),
+    const DiscoveryScreen(),
   ];
   @override
   void dispose() {
@@ -34,7 +33,7 @@ class _MainScreenState extends State<MainScreen> {
       () {
         if (xoPrv.invitationAccepted) {
           Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) => XOBoardWidget(
+              builder: (_) => const XOBoardWidget(
                     title: "title",
                   )));
         }
@@ -49,7 +48,8 @@ class _MainScreenState extends State<MainScreen> {
           buttonBackgroundColor: Colors.deepPurple,
           animationDuration: const Duration(milliseconds: 300),
           backgroundColor: Colors.transparent,
-          color: Colors.black87,
+          // color: Colors.black87,
+          color: Theme.of(context).colorScheme.onPrimary,
           height: 50,
           onTap: (value) => setState(() {
             index = value;

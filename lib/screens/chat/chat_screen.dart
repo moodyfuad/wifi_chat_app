@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:wifi_chat/data/models/message_states.dart';
-import 'package:wifi_chat/mini_games/x_o/models/x_o_invitation_model.dart';
 import 'package:wifi_chat/providers/chat_provider.dart';
 import 'package:wifi_chat/data/models/message_model.dart';
 import 'package:wifi_chat/data/models/user_model.dart';
@@ -10,9 +9,10 @@ import 'package:wifi_chat/providers/user_provider.dart';
 import 'package:wifi_chat/screens/chat/components/chat_components.dart';
 import 'package:wifi_chat/screens/chat/components/message_widget.dart';
 import 'package:wifi_chat/screens/chat/components/x_o_invitation_widget.dart';
+import 'package:wifi_chat/x_o_game/models/x_o_invitation_model.dart';
 
-class ChatPage extends StatelessWidget {
-  ChatPage({super.key, required this.user});
+class ChatScreen extends StatelessWidget {
+  ChatScreen({super.key, required this.user});
   final UserModel user;
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();

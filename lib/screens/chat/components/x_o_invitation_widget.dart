@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' as Intl;
 import 'package:provider/provider.dart';
-import 'package:wifi_chat/mini_games/x_o/models/x_o_invitation_model.dart';
 import 'package:wifi_chat/providers/x_o_provider.dart';
 import 'package:wifi_chat/screens/chat/components/chat_components.dart';
+import 'package:wifi_chat/x_o_game/models/x_o_invitation_model.dart';
 
 class XOInvitationWidget extends StatelessWidget {
   const XOInvitationWidget(

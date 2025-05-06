@@ -3,18 +3,18 @@ import 'package:provider/provider.dart';
 import 'package:wifi_chat/providers/chat_provider.dart';
 import 'package:wifi_chat/providers/discovery_provider.dart';
 import 'package:wifi_chat/data/models/user_model.dart';
-import 'package:wifi_chat/screens/chat/chat_page.dart';
+import 'package:wifi_chat/screens/chat/chat_screen.dart';
 import 'package:wifi_chat/screens/discovery/components/chat_card.dart';
-import 'package:wifi_chat/screens/discovery/components/discovery_app_bar.dart';
+import 'package:wifi_chat/screens/main/components/main_app_bar.dart';
 
-class DiscoveryPage extends StatelessWidget {
-  const DiscoveryPage({super.key});
+class DiscoveryScreen extends StatelessWidget {
+  const DiscoveryScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     ChatProvider.inChatIndex = null;
     return Scaffold(
-      appBar: getDiscoveryAppBar(title: 'Discover People', context: context),
+      appBar: getMainAppBar(title: 'Discover People', context: context),
       body: SingleChildScrollView(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
@@ -41,7 +41,7 @@ class DiscoveryPage extends StatelessWidget {
       BuildContext context, DiscoveryProvider prv, UserModel user) {
     Provider.of<ChatProvider>(context, listen: false).startChat(user);
     Navigator.of(context).push(MaterialPageRoute(
-      builder: (context) => ChatPage(user: user),
+      builder: (context) => ChatScreen(user: user),
     ));
   }
 }

@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:wifi_chat/mini_games/x_o/models/x_o_peiceModel.dart';
 import 'package:wifi_chat/providers/x_o_provider.dart';
-import 'package:wifi_chat/screens/main/main_srceen.dart';
+import 'package:wifi_chat/x_o_game/models/x_o_peiceModel.dart';
 
 class XOBoardWidget extends StatelessWidget {
   const XOBoardWidget({super.key, required this.title});

@@ -1,6 +1,7 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 
-import 'package:wifi_chat/mini_games/x_o/models/x_o_peiceModel.dart';
+
+import 'package:wifi_chat/x_o_game/models/x_o_peiceModel.dart';
 
 class XOBoardModel {
   List<XOPieceModel> board = List.generate(9, _generator);

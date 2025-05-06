@@ -128,8 +128,9 @@ class CustomTheme {
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
+          // side: BorderSide(color: Colors.black)
         ),
-        color: Colors.white,
+        color: Colors.blueGrey,
       ),
 
       // Divider Theme

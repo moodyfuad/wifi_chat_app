@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:wifi_chat/data/models/message_states.dart';
 import 'package:wifi_chat/data/models/user_model.dart';
 import 'package:wifi_chat/providers/discovery_provider.dart';
-import 'package:wifi_chat/screens/chat/components/chat_menu_overlay.dart';
+import 'package:wifi_chat/screens/chat/components/send_x_o_invitation_button.dart';
 
 class ChatCompomenets {
   static showMenuDialog(BuildContext context, UserModel user) {
@@ -13,7 +13,7 @@ class ChatCompomenets {
         actionsPadding: const EdgeInsets.all(10),
         actionsOverflowAlignment: OverflowBarAlignment.center,
         actions: [
-          ChatMenuOverlay(
+          SendXOInvitationButton(
             user: user,
           )
         ],
@@ -86,11 +86,15 @@ class ChatCompomenets {
           Hero(
             tag: user.host,
             child: CircleAvatar(
+              backgroundColor: Colors.white,
               radius: 25,
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(100),
                 child: user.profileImage == null
-                    ? const Icon(Icons.person)
+                    ? const Icon(
+                        Icons.person,
+                        size: 40,
+                      )
                     : Image.memory(
                         user.profileImage!,
                         width: 100,
@@ -100,21 +104,17 @@ class ChatCompomenets {
               ),
             ),
           ),
-          const SizedBox(
-            width: 10,
-          ),
+          const SizedBox(width: 10),
           Column(
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.ideographic,
             children: [
               Text(
-                user.name,
+                user.name.toUpperCase(),
                 style: Theme.of(context).textTheme.displayLarge,
               ),
-              const SizedBox(
-                width: 10,
-              ),
+              const SizedBox(width: 10),
               Consumer<DiscoveryProvider>(
                   builder: (context, discoveryPrv, child) {
                 final bool online = _isOnline(discoveryPrv, user);

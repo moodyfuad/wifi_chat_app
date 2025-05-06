@@ -5,10 +5,10 @@ import 'package:wifi_chat/Services/client_socket_services.dart';
 import 'package:wifi_chat/Services/server_socket_services.dart';
 import 'package:wifi_chat/data/constants/json_keys.dart';
 import 'package:wifi_chat/data/models/model_types.dart';
-import 'package:wifi_chat/mini_games/x_o/models/invitation_states.dart';
-import 'package:wifi_chat/mini_games/x_o/models/x_o_board_model.dart';
-import 'package:wifi_chat/mini_games/x_o/models/x_o_invitation_model.dart';
-import 'package:wifi_chat/mini_games/x_o/models/x_o_peiceModel.dart';
+import 'package:wifi_chat/x_o_game/enums/x_o_invitation_states.dart';
+import 'package:wifi_chat/x_o_game/models/x_o_board_model.dart';
+import 'package:wifi_chat/x_o_game/models/x_o_invitation_model.dart';
+import 'package:wifi_chat/x_o_game/models/x_o_peiceModel.dart';
 
 class XOProvider extends ChangeNotifier {
   XOProvider() {
@@ -72,7 +72,7 @@ class XOProvider extends ChangeNotifier {
       print('[+] Error connecting ');
       return;
     });
-    invitation!.state = InvitationState.accepted;
+    invitation!.state = XOInvitationStates.accepted;
     client!.sendMapped(
       invitation!.toJson(),
       onError: (error) {
@@ -101,7 +101,7 @@ class XOProvider extends ChangeNotifier {
   }
 
   void _onInitationReceived(XOInvitationModel invitation) async {
-    if (invitation.state == InvitationState.accepted &&
+    if (invitation.state == XOInvitationStates.accepted &&
         invitation.senderHost == _server.host) {
       this.invitation = invitation;
       client = ClientSocketServices(

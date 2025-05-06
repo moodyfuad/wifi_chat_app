@@ -1,15 +1,14 @@
-enum InvitationState {
+enum XOInvitationStates {
   pending,
   accepted,
   finished,
   denied;
 
-  static InvitationState fromString(String s) => switch (s) {
+  static XOInvitationStates fromString(String s) => switch (s) {
         'pending' => pending,
         'accepted' => accepted,
         'denied' => denied,
         'finished' => finished,
         _ => denied,
       };
-      
 }

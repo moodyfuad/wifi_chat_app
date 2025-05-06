@@ -3,9 +3,9 @@ import 'package:provider/provider.dart';
 import 'package:wifi_chat/providers/chat_provider.dart';
 import 'package:wifi_chat/providers/discovery_provider.dart';
 import 'package:wifi_chat/providers/user_provider.dart';
-import 'package:wifi_chat/screens/login/login_page.dart';
+import 'package:wifi_chat/screens/login/login_screen.dart';
 
-AppBar getDiscoveryAppBar({String? title, required BuildContext context}) {
+AppBar getMainAppBar({String? title, required BuildContext context}) {
   return AppBar(
     title: Text(title ?? ''),
     leading: _getLogoutWidget(context),
@@ -61,7 +61,7 @@ _showLogoutDialog(BuildContext context) {
               Provider.of<ChatProvider>(context, listen: false)
                   .stopMessageingServer();
               Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => const LoginPage()),
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
                 (route) => false,
               );
             },

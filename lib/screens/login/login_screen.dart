@@ -3,8 +3,8 @@ import 'package:wifi_chat/data/constants/assets_paths.dart';
 import 'package:wifi_chat/screens/login/components/login_page_title.dart';
 import 'package:wifi_chat/screens/login/components/login_field_container.dart';
 
-class LoginPage extends StatelessWidget {
-  const LoginPage({super.key});
+class LoginScreen extends StatelessWidget {
+  const LoginScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

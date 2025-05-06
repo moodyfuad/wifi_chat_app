@@ -10,7 +10,7 @@ import 'package:wifi_chat/data/models/message_model.dart';
 import 'package:wifi_chat/data/models/message_states.dart';
 import 'package:wifi_chat/data/models/model_types.dart';
 import 'package:wifi_chat/data/models/user_model.dart';
-import 'package:wifi_chat/mini_games/x_o/models/x_o_invitation_model.dart';
+import 'package:wifi_chat/x_o_game/models/x_o_invitation_model.dart';
 
 class ChatProvider extends ChangeNotifier {
   final List<ClientSocketServices> clients = [];

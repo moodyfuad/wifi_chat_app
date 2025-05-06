@@ -1,3 +1,9 @@
+TODO:
+1 - restructure the app fields
+2 - chech the async await methods
+3 - implement the hive storage 
+4 - error handling accros the app
+
 
 Logout:
 
@@ -9,7 +15,7 @@ X-O Game Feature TASKS:
         - socket sends the invitation ✔️
         - server receive the invitation ✔️
         - notify about the invitation state
-    3- redirect the user when notified (invitation accepted) to game widget
+    3- redirect the user when notified (invitation accepted) to game widget ✔️
 
     2- gameProvider
         - socket bettween the 2 players

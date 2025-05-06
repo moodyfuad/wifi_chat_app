@@ -5,7 +5,7 @@ import 'package:wifi_chat/data/constants/json_keys.dart';
 import 'package:wifi_chat/data/models/message_model.dart';
 import 'package:wifi_chat/data/models/message_states.dart';
 import 'package:wifi_chat/data/models/model_types.dart';
-import 'package:wifi_chat/mini_games/x_o/models/invitation_states.dart';
+import 'package:wifi_chat/x_o_game/enums/x_o_invitation_states.dart';
 
 class XOInvitationModel extends MessageModel {
   XOInvitationModel(
@@ -16,9 +16,9 @@ class XOInvitationModel extends MessageModel {
       required super.receiverHost,
       super.messageStates,
       super.sendingAttmpts,
-      this.state = InvitationState.pending});
+      this.state = XOInvitationStates.pending});
 
-  InvitationState state = InvitationState.pending;
+  XOInvitationStates state = XOInvitationStates.pending;
 
   @override
   Map<String, dynamic> toJson() => {
@@ -44,6 +44,6 @@ class XOInvitationModel extends MessageModel {
         dateTime: DateTime.parse(json[JsonKeys.dateTime]),
         sendingAttmpts: json[JsonKeys.sendingAttmpts] as int,
         messageStates: MessageStates.fromString(json[JsonKeys.messageStates]),
-        state: InvitationState.fromString(json[JsonKeys.invitationState]));
+        state: XOInvitationStates.fromString(json[JsonKeys.invitationState]));
   }
 }

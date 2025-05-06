@@ -3,18 +3,18 @@ import 'package:provider/provider.dart';
 import 'package:wifi_chat/providers/chat_provider.dart';
 import 'package:wifi_chat/providers/discovery_provider.dart';
 import 'package:wifi_chat/data/models/user_model.dart';
-import 'package:wifi_chat/screens/chat/chat_page.dart';
+import 'package:wifi_chat/screens/chat/chat_screen.dart';
 import 'package:wifi_chat/screens/discovery/components/chat_card.dart';
-import 'package:wifi_chat/screens/discovery/components/discovery_app_bar.dart';
+import 'package:wifi_chat/screens/main/components/main_app_bar.dart';
 
-class ContactPage extends StatelessWidget {
-  const ContactPage({super.key});
+class ContactScreen extends StatelessWidget {
+  const ContactScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     ChatProvider.inChatIndex = null;
     return Scaffold(
-      appBar: getDiscoveryAppBar(title: 'Chats', context: context),
+      appBar: getMainAppBar(title: 'Chats', context: context),
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -46,7 +46,7 @@ class ContactPage extends StatelessWidget {
       BuildContext context, ChatProvider chatPrv, UserModel user) {
     chatPrv.startChat(user);
     Navigator.of(context).push(MaterialPageRoute(
-      builder: (context) => ChatPage(user: user),
+      builder: (context) => ChatScreen(user: user),
     ));
   }
 }

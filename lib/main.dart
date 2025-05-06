@@ -9,8 +9,8 @@ import 'package:wifi_chat/providers/chat_provider.dart';
 import 'package:wifi_chat/providers/discovery_provider.dart';
 import 'package:wifi_chat/providers/user_provider.dart';
 import 'package:wifi_chat/providers/x_o_provider.dart';
-import 'package:wifi_chat/view/Theme/custom_theme.dart';
-import 'package:wifi_chat/screens/login/login_page.dart';
+import 'package:wifi_chat/screens/login/login_screen.dart';
+import 'package:wifi_chat/screens/shared/Theme/custom_theme.dart';
 
 void _isolateMain(RootIsolateToken rootIsolateToken) async {
   BackgroundIsolateBinaryMessenger.ensureInitialized(rootIsolateToken);
@@ -32,7 +32,6 @@ void main() async {
       ChangeNotifierProvider<XOProvider>(create: (context) => XOProvider()),
     ],
     builder: (context, child) => const MainApp(),
-    // child: LoginPage(),
   ));
 }
 
@@ -43,7 +42,7 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       child: MaterialApp(
-        home: const LoginPage(),
+        home: const LoginScreen(),
         debugShowCheckedModeBanner: false,
         title: 'WiFi Chat',
         theme: CustomTheme.lightTheme,
