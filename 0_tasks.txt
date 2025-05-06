@@ -1,0 +1,18 @@
+
+Logout:
+
+X-O Game Feature TASKS:
+    1- invitation model Inherits from MessageModel ✔️
+        - invitation model additinal fields: ✔️
+            invitationStatus
+    2- chatProvider to send the invitation ✔️
+        - socket sends the invitation ✔️
+        - server receive the invitation ✔️
+        - notify about the invitation state
+    3- redirect the user when notified (invitation accepted) to game widget
+
+    2- gameProvider
+        - socket bettween the 2 players
+        - sends the game board after the player turn
+        - receive the game board after the other player turn
+        - provider the game board and notify its changes in each player turn
