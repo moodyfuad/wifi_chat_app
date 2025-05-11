@@ -23,11 +23,22 @@ dependencies:
   shared_preferences: ^2.5.3
   timezone: ^0.10.0
   uuid: ^4.5.1
+  hive_flutter:
+  hive:
+  flutter_native_splash:
+
+flutter_native_splash:
+  color: "#42a5f5"
+  image: "assets/images/splash_img.jpg"
+  android: true
+  ios: true
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
+  hive_generator:
+  build_runner:
 
 flutter:
   uses-material-design: true

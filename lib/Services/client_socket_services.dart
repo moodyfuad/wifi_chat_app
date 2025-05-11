@@ -24,22 +24,39 @@ class ClientSocketServices {
     try {
       _socket =
           await Socket.connect(host, port, timeout: const Duration(seconds: 2));
+      //         .catchError((e) {
+      //   print('[+] Client Error: $e');
+      //   return e;
+      // });
       print('[+] Connected to $host:$port');
-      onConnectionSuccess(_socket!);
+      try {
+        onConnectionSuccess(_socket!);
+      } catch (e) {
+        print('[+] Client Error invoking callback: $e');
+      }
     } catch (error) {
-      print('[+] Connecttion Failed to host :[${_socket?.address.address}]');
-      onConnectionFailed(error, _socket);
+      print(
+          '[+] Connecttion Failed to host :[${_socket?.address.address ?? 'unknown'}]');
+      // return;
+      try {
+        onConnectionFailed(error, _socket);
+      } catch (e) {
+        print('[+] Client Error invoking callback: $e');
+      }
     }
   }
 
-  //todo : convert the Message model to Map<String, dynamic>
   void sendMapped(Map<String, dynamic> mappedObject,
-      {void Function(dynamic error)? onError}) {
+      {void Function(SocketException error)? onError}) {
     try {
-      if (_socket == null) throw Exception('[+] Client: Not connected to server');
-      _socket!.write(jsonEncode(mappedObject) + '\n'); // Add newline as delimiter
+      if (_socket == null) {
+        throw Exception('[+] Client: Not connected to server');
+      }
+      _socket!
+          .write(jsonEncode(mappedObject) + '\n'); // Add newline as delimiter
+      _socket!.remoteAddress.address;
       print("[+] Client sent mappedObject, to: $host");
-    } catch (e) {
+    } on SocketException catch (e, _) {
       onError?.call(e);
     }
   }
@@ -84,14 +101,13 @@ class ClientSocketServices {
     _socket!.write('\n');
   }
 
-  void disconnect() async {
+  Future<void> disconnect() async {
     try {
       await _socket?.flush();
-      // await _socket?.close();
-      _socket?.destroy();
+      await _socket?.close();
       _socket = null;
     } catch (e) {
-      print(e);
+      print('[+] client disconnect Error: $e');
     }
   }
 }

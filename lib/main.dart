@@ -2,9 +2,14 @@ import 'dart:isolate';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wifi_chat/Services/notification_services.dart';
+import 'package:wifi_chat/data/hive/hive_boxes.dart';
+import 'package:wifi_chat/data/models/chat_model.dart';
+import 'package:wifi_chat/data/models/message_model.dart';
+import 'package:wifi_chat/data/models/user_model.dart';
 import 'package:wifi_chat/providers/chat_provider.dart';
 import 'package:wifi_chat/providers/discovery_provider.dart';
 import 'package:wifi_chat/providers/user_provider.dart';
@@ -19,7 +24,12 @@ void _isolateMain(RootIsolateToken rootIsolateToken) async {
 }
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  await Hive.initFlutter();
+  Hive.registerAdapter(ChatModelAdapter());
+  Hive.registerAdapter(UserModelAdapter());
+  Hive.registerAdapter(MessageModelAdapter());
+  chatsBox = await Hive.openBox<ChatModel>('chatsBox');
+  // WidgetsFlutterBinding.ensureInitialized();
   RootIsolateToken rootIsolateToken = RootIsolateToken.instance!;
   Isolate.spawn(_isolateMain, rootIsolateToken);
   await NotificationService().initialize();

@@ -3,7 +3,6 @@ import 'dart:convert';
 
 import 'package:wifi_chat/data/constants/json_keys.dart';
 import 'package:wifi_chat/data/models/message_model.dart';
-import 'package:wifi_chat/data/models/message_states.dart';
 import 'package:wifi_chat/data/models/model_types.dart';
 import 'package:wifi_chat/x_o_game/enums/x_o_invitation_states.dart';
 
@@ -27,7 +26,7 @@ class XOInvitationModel extends MessageModel {
         JsonKeys.senderHost: senderHost,
         JsonKeys.receiverHost: receiverHost,
         JsonKeys.dateTime: dateTime.toString(),
-        JsonKeys.messageStates: messageStates.name,
+        JsonKeys.messageStates: messageStates,
         JsonKeys.sendingAttmpts: sendingAttmpts,
         JsonKeys.invitationState: state.name,
         JsonKeys.modelType: ModelTypes.xoInvitation.name, // Add type identifier
@@ -43,7 +42,7 @@ class XOInvitationModel extends MessageModel {
         content: utf8.decode((json[JsonKeys.content] as String).codeUnits),
         dateTime: DateTime.parse(json[JsonKeys.dateTime]),
         sendingAttmpts: json[JsonKeys.sendingAttmpts] as int,
-        messageStates: MessageStates.fromString(json[JsonKeys.messageStates]),
+        messageStates:json[JsonKeys.messageStates] as String,
         state: XOInvitationStates.fromString(json[JsonKeys.invitationState]));
   }
 }

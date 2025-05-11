@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:bonsoir/bonsoir.dart';
 import 'package:uuid/uuid.dart';
+import 'package:wifi_chat/data/constants/json_keys.dart';
 import 'package:wifi_chat/data/models/user_model.dart';
 
 class DiscoveryService {
@@ -36,8 +37,12 @@ class DiscoveryService {
       if (event.type == BonsoirDiscoveryEventType.discoveryServiceResolved) {
         print(' [+] Found Resolved : ${event.service?.name}');
         var service = (event.service as ResolvedBonsoirService);
-        var user = await _createUser(service);
-        onDiscoverd?.call(user);
+        try {
+          var user = await _createUser(service);
+          onDiscoverd?.call(user);
+        } catch (e) {
+          print('[+] Discovery Error : $e');
+        }
         // await socketServices.connectToServer((event.service as ResolvedBonsoirService).host!);
       } else if (event.type == BonsoirDiscoveryEventType.discoveryServiceLost) {
         print('[-] Lost : ${event.service?.name}');
@@ -46,25 +51,37 @@ class DiscoveryService {
           BonsoirDiscoveryEventType.discoveryServiceResolveFailed) {
         print('[+] resolve failed  : ${event.service?.toJson()}');
       }
+    }).onError((e) {
+      print('[+] Error from Descovery service: $e');
     });
     await discovery.start();
   }
 
   Future<void> stopDiscovery() async {
     if (discovery.isStopped) return;
-    await discovery.stop();
+    try {
+      await discovery.stop();
+    } catch (e) {
+      print('[+] Discovery stop Error : $e');
+    }
     isDiscoveryOn = false;
   }
 
   Future<UserModel> _createUser(ResolvedBonsoirService service) async {
     final hostAsIp = await _resolveHostToIP(service.host!);
-    Uint8List? imagebytes = await _getImageFromServer(hostAsIp);
+    Uint8List? imagebytes;
+    try {
+      imagebytes = await _getImageFromServer(hostAsIp);
+    } catch (_) {}
     UserModel user = UserModel(
         host: hostAsIp,
         port: port,
         id: const Uuid().v1(),
         name: service.name,
-        profileImage: imagebytes);
+        profileImage: imagebytes,
+        discoveredDateTime: DateTime.parse(
+            service.attributes[JsonKeys.dateTime] ??
+                DateTime.now().toString()));
     return user;
   }
 
@@ -81,13 +98,12 @@ class DiscoveryService {
         bytesBuilder.add(element);
       }
       //? should be closed ?
+      clientSocket.destroy();
       return bytesBuilder.takeBytes();
     } catch (e) {
       print('[+] Error connecting to image server $host: $e');
       return null;
-    } finally {
-      // clientSocket.close();
-    }
+    } finally {}
   }
 
   static Future<String> _resolveHostToIP(String host) async {

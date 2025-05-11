@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' as intl;
 import 'package:wifi_chat/data/models/message_model.dart';
-import 'package:wifi_chat/data/models/message_states.dart';
 import 'package:wifi_chat/screens/chat/components/chat_components.dart';
 
 class MessageWidget extends StatelessWidget {
@@ -13,7 +12,7 @@ class MessageWidget extends StatelessWidget {
     required this.message,
     required this.isMe,
   });
-  MessageStates get states => message.messageStates;
+  String get states => message.messageStates;
 
   @override
   Widget build(BuildContext context) {

@@ -8,6 +8,8 @@ import 'package:wifi_chat/providers/discovery_provider.dart';
 import 'package:wifi_chat/providers/user_provider.dart';
 import 'package:wifi_chat/screens/chat/components/chat_components.dart';
 import 'package:wifi_chat/screens/chat/components/message_widget.dart';
+import 'package:wifi_chat/screens/chat/components/show_delete_dialog.dart';
+import 'package:wifi_chat/screens/chat/components/show_resend_dialog.dart';
 import 'package:wifi_chat/screens/chat/components/x_o_invitation_widget.dart';
 import 'package:wifi_chat/x_o_game/models/x_o_invitation_model.dart';
 
@@ -21,13 +23,15 @@ class ChatScreen extends StatelessWidget {
     return user.host != message.senderHost;
   }
 
-  Future<void> _sendMessage(ChatProvider prv, BuildContext context,
-      {int tryingLimit = 4}) async {
-    if (_messageController.text.isEmpty) return;
-    final message = _createMessage(context);
-    await prv.sendMessage(message, user, resendingLimit: tryingLimit);
-    _messageController.clear();
-    updateScrollPosition();
+  Future<void> _sendMessage(BuildContext context, {int tryingLimit = 4}) async {
+    var prv = getChatProv(context);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (_messageController.text.isEmpty) return;
+      final message = _createMessage(context);
+      await prv.sendMessage(message, user, resendingLimit: tryingLimit);
+      _messageController.clear();
+      // updateScrollPosition();
+    });
   }
 
   MessageModel _createMessage(BuildContext context) {
@@ -51,120 +55,101 @@ class ChatScreen extends StatelessWidget {
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Consumer2<ChatProvider, DiscoveryProvider>(
-      builder: (context, chatPrv, discoveryPrv, child) {
-        updateScrollPosition();
-        ChatProvider.inChatIndex = chatPrv.getChatIndex(user.host);
-        return Scaffold(
-          appBar: ChatCompomenets.getChatPageAppBar(context, user),
-          body: Column(
-            children: [
-              Expanded(
-                child: ListView.builder(
-                  controller: _scrollController,
-                  itemCount: chatPrv.getUserMessages(user).length,
-                  itemBuilder: (context, index) {
-                    List<MessageModel> messages = chatPrv.getUserMessages(user);
-                    final message = messages[index];
-                    switch (message) {
-                      case XOInvitationModel invitation:
-                        return XOInvitationWidget(
-                            invitation: invitation,
-                            isMyMessage: _isMyMessage(message));
-
-                      default:
-                        return GestureDetector(
-                          onTap: () {
-                            if (message.messageStates == MessageStates.failed) {
-                              message.sendingAttmpts = 0;
-                              _showResendDialog(context, message,
-                                  () => chatPrv.sendMessage(message, user));
-                            }
-                          },
-                          child: MessageWidget(
-                              message: message, isMe: _isMyMessage(message)),
-                        );
-                    }
-                  },
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _messageController,
-                        decoration: const InputDecoration(
-                          hintText: 'Enter your message',
-                        ),
-                        onSubmitted: (_) => _sendMessage(chatPrv, context),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.send),
-                      onPressed: () async {
-                        _sendMessage(chatPrv, context);
-                        // updateScrollPosition();
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
+  getChatProv(BuildContext context) {
+    return Provider.of<ChatProvider>(context, listen: false);
   }
 
-  void _showResendDialog(
-      BuildContext context, MessageModel message, void Function() onResend) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text(
-          'Resend Message',
-          style: TextStyle(fontSize: 18),
-        ),
-        content: const Text(
-          'Do you want to resend this message?',
-        ),
-        actions: <Widget>[
-          TextButton(
-            child: const Text('Cancel'),
-            onPressed: () => Navigator.of(context).pop(false),
-          ),
-          TextButton(
-            child: const Text(
-              'Resend',
-              style: TextStyle(color: Colors.red),
+  @override
+  Widget build(BuildContext context) {
+    ChatProvider.inChatWithUserhost = user.host;
+    return Scaffold(
+      appBar: ChatCompomenets.getChatPageAppBar(context, user),
+      body: Column(
+        children: [
+          Expanded(
+            child: Consumer2<ChatProvider, DiscoveryProvider>(
+              builder: (context, chatPrv, discoveryPrv, child) {
+                return FutureBuilder(
+                    future: chatPrv.getUserMessages(user),
+                    initialData: const <MessageModel>[],
+                    builder: (context, snapshot) {
+                      updateScrollPosition();
+                      return !snapshot.hasData
+                          ? Container()
+                          : ListView.builder(
+                              controller: _scrollController,
+                              itemCount: snapshot.data!.length,
+                              itemBuilder: (context, index) {
+                                List<MessageModel> messages =
+                                    snapshot.data ?? [];
+                                final message = messages[index];
+                                switch (message) {
+                                  case XOInvitationModel invitation:
+                                    return XOInvitationWidget(
+                                        invitation: invitation,
+                                        isMyMessage: _isMyMessage(message));
+
+                                  default:
+                                    return GestureDetector(
+                                      onTap: () async {
+                                        if (message.messageStates ==
+                                            MessageStates.failed) {
+                                          message.sendingAttmpts = 0;
+                                          showResendDialog(context, message,
+                                              () async {
+                                            WidgetsBinding.instance
+                                                .addPostFrameCallback(
+                                                    (_) async {
+                                              await chatPrv.sendMessage(
+                                                  message, user);
+                                            });
+                                          });
+                                        }
+                                      },
+                                      child: GestureDetector(
+                                        onLongPress: () async {
+                                          showDeleteDialog(context, message,
+                                              () async {
+                                            await chatPrv.deleteMessage(
+                                                user.host, message);
+                                          });
+                                        },
+                                        child: MessageWidget(
+                                            message: message,
+                                            isMe: _isMyMessage(message)),
+                                      ),
+                                    );
+                                }
+                              },
+                            );
+                    });
+              },
             ),
-            onPressed: () {
-              Navigator.of(context).pop(true);
-              onResend(); // Your resend implementation
-            },
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _messageController,
+                    decoration: const InputDecoration(
+                      hintText: 'Enter your message',
+                    ),
+                    onSubmitted: (_) async => await _sendMessage(context),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.send),
+                  onPressed: () async {
+                    await _sendMessage(context);
+                  },
+                ),
+              ],
+            ),
           ),
         ],
-        actionsAlignment: MainAxisAlignment.end,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
       ),
-    ).then((shouldResend) {
-      if (shouldResend == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Resending message...',
-            ),
-            behavior: SnackBarBehavior.floating,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-    });
+    );
   }
 }

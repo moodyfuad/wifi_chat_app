@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:bonsoir/bonsoir.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 import 'package:wifi_chat/Services/discovery_service.dart';
+import 'package:wifi_chat/data/constants/json_keys.dart';
 
 class RegistrationService {
   BonsoirBroadcast? broadcast;
@@ -43,7 +44,7 @@ class RegistrationService {
 
   static Map<String, String> _createAttri() {
     return {
-      'time': DateTime.now().toString(),
+      JsonKeys.dateTime: DateTime.now().toString(),
       'string': 'isString',
     };
   }

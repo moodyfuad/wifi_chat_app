@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:wifi_chat/Services/client_socket_services.dart';
 import 'package:wifi_chat/Services/server_socket_services.dart';
@@ -16,16 +14,15 @@ class XOProvider extends ChangeNotifier {
   }
   final ServerSocketServices _server = ServerSocketServices();
   ClientSocketServices? client;
-  Socket? socket;
   final XOBoardModel board = XOBoardModel();
   bool? myTurn;
   XOInvitationModel? invitation;
   bool invitationAccepted = false;
   // UserModel? withUser;
 
-  void startGame({required XOInvitationModel invitation}) {
+  Future<void> startGame({required XOInvitationModel invitation}) async {
     this.invitation = invitation;
-    _sendInvitationAcceptedMessage();
+    await _sendInvitationAcceptedMessage();
     invitationAccepted = true;
     notifyListeners();
     invitationAccepted = false;
@@ -35,15 +32,16 @@ class XOProvider extends ChangeNotifier {
     _server.onObjectReceivedCallBacks.removeLast();
     try {
       client?.disconnect();
-      socket?.destroy();
     } catch (e) {
       print('[+] Error End the game : $e');
     }
     invitationAccepted = false;
+    reset();
     notifyListeners();
   }
 
   move(int index) {
+    // invitationAccepted = false;
     if (myTurn == null && board.oMoves == 0 && board.xMoves == 0) {
       board.move(index);
       myTurn = false;
@@ -66,7 +64,6 @@ class XOProvider extends ChangeNotifier {
         name: invitation!.senderName, host: invitation!.senderHost);
 
     await client!.connect(onConnectionSuccess: (socket) {
-      this.socket = socket;
       print('[+] Connecttion Success');
     }, onConnectionFailed: (error, socket) {
       print('[+] Error connecting ');
@@ -82,14 +79,15 @@ class XOProvider extends ChangeNotifier {
     );
   }
 
-  _onObjectReceived(dynamic object) {
+  _onObjectReceived(dynamic object) async {
     if (object[JsonKeys.modelType] == ModelTypes.xoInvitation.name) {
-      _onInitationReceived(XOInvitationModel.fromJson(object));
+      await _onInitationReceived(XOInvitationModel.fromJson(object));
     } else if (object[JsonKeys.modelType] == ModelTypes.xoPiece.name) {
-      _onPlayerMoved(XOPieceModel.fromMap(object));
+      await _onPlayerMoved(XOPieceModel.fromMap(object));
     } else if (object['index'] != null) {
       board.move(object['index']);
       myTurn = true;
+
       notifyListeners();
     }
   }
@@ -100,7 +98,7 @@ class XOProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _onInitationReceived(XOInvitationModel invitation) async {
+  Future<void> _onInitationReceived(XOInvitationModel invitation) async {
     if (invitation.state == XOInvitationStates.accepted &&
         invitation.senderHost == _server.host) {
       this.invitation = invitation;
@@ -108,7 +106,6 @@ class XOProvider extends ChangeNotifier {
           name: invitation.senderName, host: invitation.receiverHost);
 
       await client!.connect(onConnectionSuccess: (socket) {
-        this.socket = socket;
         print('[+] Connecttion Success');
       }, onConnectionFailed: (error, socket) {
         print('[+] Error connecting ');
@@ -117,6 +114,7 @@ class XOProvider extends ChangeNotifier {
       invitationAccepted = true;
       notifyListeners();
       invitationAccepted = false;
+      client?.sendMapped(invitation.toJson());
     }
   }
 }

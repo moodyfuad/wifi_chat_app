@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:wifi_chat/data/models/message_states.dart';
 import 'package:wifi_chat/data/models/user_model.dart';
+import 'package:wifi_chat/providers/chat_provider.dart';
 import 'package:wifi_chat/providers/discovery_provider.dart';
 import 'package:wifi_chat/screens/chat/components/send_x_o_invitation_button.dart';
+import 'package:wifi_chat/screens/shared/utils/show_profile_picture_dialog.dart';
 
 class ChatCompomenets {
   static showMenuDialog(BuildContext context, UserModel user) {
@@ -34,7 +36,7 @@ class ChatCompomenets {
     ]);
   }
 
-  static Widget getMessageStateWidget(MessageStates state) {
+  static Widget getMessageStateWidget(String state) {
     return switch (state) {
       MessageStates.sending => const Icon(Icons.watch_later_outlined),
       MessageStates.sent => const Icon(
@@ -50,6 +52,10 @@ class ChatCompomenets {
           color: Colors.red,
         ),
       MessageStates.read => _getReadIcon(),
+      _ => SizedBox(
+          width: 0,
+          height: 0,
+        )
     };
   }
 
@@ -62,6 +68,7 @@ class ChatCompomenets {
         padding: const EdgeInsets.symmetric(horizontal: 10),
         onPressed: () {
           Navigator.of(context).pop();
+          ChatProvider.inChatWithUserhost = '';
         },
         icon: const Icon(
           Icons.arrow_back_ios_rounded,
@@ -80,55 +87,65 @@ class ChatCompomenets {
       ],
       leadingWidth: 40,
       toolbarHeight: 60,
-      title: Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          Hero(
-            tag: user.host,
-            child: CircleAvatar(
-              backgroundColor: Colors.white,
-              radius: 25,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(100),
-                child: user.profileImage == null
-                    ? const Icon(
-                        Icons.person,
-                        size: 40,
-                      )
-                    : Image.memory(
-                        user.profileImage!,
-                        width: 100,
-                        height: 100,
-                        fit: BoxFit.cover,
-                      ),
+      title:
+          Consumer<DiscoveryProvider>(builder: (context, discoveryPrv, child) {
+        final bool online = _isOnline(discoveryPrv, user);
+        try {
+          user = discoveryPrv.users.firstWhere((u) => user.host == u.host);
+        } catch (_) {}
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            Hero(
+              tag: user.host,
+              child: GestureDetector(
+                onTap: () {
+                  if (user.profileImage != null) {
+                    showProfilePictureDialog(context, user.profileImage!);
+                  }
+                },
+                child: CircleAvatar(
+                  backgroundColor: Colors.white,
+                  radius: 25,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(100),
+                    child: user.profileImage == null
+                        ? const Icon(
+                            Icons.person,
+                            size: 40,
+                          )
+                        : Image.memory(
+                            user.profileImage!,
+                            width: 100,
+                            height: 100,
+                            fit: BoxFit.cover,
+                          ),
+                  ),
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 10),
-          Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.ideographic,
-            children: [
-              Text(
-                user.name.toUpperCase(),
-                style: Theme.of(context).textTheme.displayLarge,
-              ),
-              const SizedBox(width: 10),
-              Consumer<DiscoveryProvider>(
-                  builder: (context, discoveryPrv, child) {
-                final bool online = _isOnline(discoveryPrv, user);
-                return Text(
+            const SizedBox(width: 10),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.ideographic,
+              children: [
+                Text(
+                  user.name.toUpperCase(),
+                  style: Theme.of(context).textTheme.displayLarge,
+                ),
+                const SizedBox(width: 10),
+                Text(
                   online ? 'online' : 'offline',
                   style: Theme.of(context).textTheme.labelLarge!.copyWith(
                         color: online ? Colors.green : Colors.red,
                       ),
-                );
-              }),
-            ],
-          ),
-        ],
-      ),
+                )
+              ],
+            ),
+          ],
+        );
+      }),
     );
   }
 }

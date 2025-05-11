@@ -27,18 +27,23 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    ChatProvider.inChatIndex = null;
+    ChatProvider.inChatWithUserhost = '';
     var xoPrv = Provider.of<XOProvider>(context, listen: false);
-    xoPrv.addListener(
-      () {
-        if (xoPrv.invitationAccepted) {
-          Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) => const XOBoardWidget(
-                    title: "title",
-                  )));
-        }
-      },
-    );
+    void XOProviderListener() {
+      if (xoPrv.invitationAccepted) {
+        try {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => const XOBoardWidget(
+                      title: "title",
+                    )));
+            xoPrv.removeListener(XOProviderListener);
+          });
+        } catch (_) {}
+      }
+    }
+
+    xoPrv.addListener(XOProviderListener);
     return Scaffold(
       body: pages[index],
       bottomNavigationBar: IconTheme(

@@ -1,17 +1,27 @@
 // message_model.dart
 import 'dart:convert';
 
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:wifi_chat/data/constants/json_keys.dart';
 import 'package:wifi_chat/data/models/message_states.dart';
 import 'package:wifi_chat/data/models/model_types.dart';
 
+part '../hive/adapters/message_model.g.dart';
+@HiveType(typeId: 1)
 class MessageModel {
+  @HiveField(0)
   final String senderName;
+  @HiveField(1)
   final String senderHost;
+  @HiveField(2)
   final String receiverHost;
+  @HiveField(3)
   final String content;
+  @HiveField(4)
   final DateTime dateTime;
-  MessageStates messageStates = MessageStates.sending;
+  @HiveField(5)
+  String messageStates = MessageStates.sending;
+  @HiveField(6)
   int sendingAttmpts = 0;
 
   MessageModel({
@@ -31,7 +41,7 @@ class MessageModel {
         JsonKeys.senderHost: senderHost,
         JsonKeys.receiverHost: receiverHost,
         JsonKeys.dateTime: dateTime.toString(),
-        JsonKeys.messageStates: messageStates.name,
+        JsonKeys.messageStates: messageStates,
         JsonKeys.sendingAttmpts: sendingAttmpts,
         JsonKeys.modelType: ModelTypes.message.name, // Add type identifier
       };
@@ -44,6 +54,6 @@ class MessageModel {
         content: utf8.decode((json[JsonKeys.content] as String).codeUnits),
         dateTime: DateTime.parse(json[JsonKeys.dateTime]),
         sendingAttmpts: json[JsonKeys.sendingAttmpts] as int,
-        messageStates: MessageStates.fromString(json[JsonKeys.messageStates]),
+        messageStates: json[JsonKeys.messageStates] as String,
       );
 }

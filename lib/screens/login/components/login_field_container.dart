@@ -8,31 +8,45 @@ import 'package:wifi_chat/providers/user_provider.dart';
 import 'package:wifi_chat/screens/main/main_srceen.dart';
 import 'package:wifi_chat/screens/shared/validators/login_validator.dart';
 
-class LoginFieldContainer extends StatelessWidget {
-  LoginFieldContainer({
+class LoginFieldContainer extends StatefulWidget {
+  const LoginFieldContainer({
     super.key,
   });
+
+  @override
+  State<LoginFieldContainer> createState() => _LoginFieldContainerState();
+}
+
+class _LoginFieldContainerState extends State<LoginFieldContainer> {
   final _formState = GlobalKey<FormState>();
+
   final _nameController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    var userProv = Provider.of<UserProvider>(context, listen: false);
+    _nameController.text = userProv.user.name;
     return Stack(children: [
       Container(
         padding: const EdgeInsets.all(20),
         margin: const EdgeInsets.fromLTRB(20, 60, 20, 20),
         width: double.infinity,
-        height: 220,
+        height: 200,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.2),
+          color: Colors.white10.withOpacity(0.2),
+          border: Border.all(color: Colors.white),
           borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 3,
-              offset: const Offset(0, 0), // changes position of shadow
-            ),
-          ],
         ),
         alignment: Alignment.center,
         child: SingleChildScrollView(
@@ -43,25 +57,20 @@ class LoginFieldContainer extends StatelessWidget {
                 Form(
                   key: _formState,
                   autovalidateMode: AutovalidateMode.always,
-                  child:
-                      Consumer<UserProvider>(builder: (context, value, child) {
-                    _nameController.text = value.user.name;
-                    return TextFormField(
-                      controller: _nameController,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.allow(RegExp("[a-zA-Z]"))
-                      ],
-                      maxLength: 15,
-                      decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.person),
-                        hintText: "Enter Your Name (English)",
-                        labelText: 'Name (English)',
-                      ),
-                      validator: (vlaue) => LoginValidator.nameValidator(vlaue),
-                      onFieldSubmitted: (_) =>
-                          _navigateToDiscoveryPage(context),
-                    );
-                  }),
+                  child: TextFormField(
+                    controller: _nameController,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp("[a-zA-Z]"))
+                    ],
+                    maxLength: 15,
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.person),
+                      hintText: "Enter Your Name (English)",
+                      labelText: 'Name (English)',
+                    ),
+                    validator: (vlaue) => LoginValidator.nameValidator(vlaue),
+                    onFieldSubmitted: (_) => _navigateToDiscoveryPage(context),
+                  ),
                 ),
                 ElevatedButton(
                   onPressed: () => _navigateToDiscoveryPage(context),

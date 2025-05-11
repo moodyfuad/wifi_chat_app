@@ -5,7 +5,7 @@ import 'package:wifi_chat/Services/client_socket_services.dart';
 import 'package:wifi_chat/Services/notification_services.dart';
 import 'package:wifi_chat/Services/server_socket_services.dart';
 import 'package:wifi_chat/data/constants/json_keys.dart';
-import 'package:wifi_chat/data/models/chat_model.dart';
+import 'package:wifi_chat/data/hive/helpers/chat_box_helper.dart';
 import 'package:wifi_chat/data/models/message_model.dart';
 import 'package:wifi_chat/data/models/message_states.dart';
 import 'package:wifi_chat/data/models/model_types.dart';
@@ -16,31 +16,34 @@ class ChatProvider extends ChangeNotifier {
   final List<ClientSocketServices> clients = [];
   final ServerSocketServices _server = ServerSocketServices();
   String get myHost => _server.host ?? "No Host Yet";
-  List<ChatModel> chats = [];
-  static int? inChatIndex;
+  static String inChatWithUserhost = '';
 
-  List<MessageModel> getUserMessages(UserModel user) {
-    int chatIndex = getChatIndex(user.host);
-    inChatIndex = chatIndex;
-    if (chatIndex == -1) {
-      print('[+] No Message With User ${user.name}');
-      return [];
-    } else {
-      List<MessageModel> messages = chats[chatIndex].messages;
-      for (MessageModel message in messages.where((msg) =>
-          msg.senderHost != _server.host &&
-          msg.messageStates != MessageStates.read)) {
-        _updateMessageStatusToRead(message, user);
-      }
-      return messages;
+  Future<List<MessageModel>> getUserMessages(UserModel user) async {
+    final messages = await ChatBoxHelper.getUserMessages(user);
+
+    for (MessageModel message in messages.where((msg) =>
+        msg.senderHost != _server.host &&
+        msg.messageStates != MessageStates.read)) {
+      await _updateMessageStatusToRead(message, user);
+      await Future.delayed(const Duration(milliseconds: 100));
     }
+    return messages;
   }
 
-  void startMessagingServer() {
-    _server.startServer(
-        onObjectReceived: _onObjectReceived,
-        onNewClientConnected: _onClientConnected,
-        onClientDisconnected: _onClientDisconnected);
+  Future<void> deleteMessage(String host, MessageModel message) async {
+    await ChatBoxHelper.deleteChatMessage(host, message);
+    notifyListeners();
+  }
+
+  Future<void> startMessagingServer() async {
+    try {
+      await _server.startServer(
+          onObjectReceived: _onObjectReceived,
+          onNewClientConnected: _onClientConnected,
+          onClientDisconnected: _onClientDisconnected);
+    } catch (e) {
+      print('[+] Chat Prov (startMessagingServer) Error: $e');
+    }
   }
 
   void stopMessageingServer() {
@@ -48,117 +51,152 @@ class ChatProvider extends ChangeNotifier {
       _server.stop();
       //* Added
       for (var client in clients) {
-        client.disconnect();
-        clients.remove(client);
+        try {
+          clients.remove(client);
+          client.disconnect();
+        } catch (e) {
+          clients.remove(client);
+          print('[+] Error stopMessageingServer: $e');
+        }
       }
     } catch (_) {}
   }
 
-  Future<void> startChat(UserModel withUser,
-      {void Function()? onFailed}) async {
-    int clientIndex = _getClientIindex(withUser.host);
-    int chatIndex = getChatIndex(withUser.host);
-    //^ the user is new
-    if (clientIndex == -1) {
-      final client =
-          ClientSocketServices(host: withUser.host, name: withUser.name);
-      bool success = false;
-      await client.connect(
-        onConnectionFailed: _onConnectionFailed,
-        onConnectionSuccess: (_) {
-          clients.add(client);
-          if (chatIndex == -1) chats.add(ChatModel(withUser: withUser));
-          success = true;
-        },
-      );
-      if (!success) onFailed?.call();
-    }
-  }
-
-  Future<void> sendMessage(MessageModel message, UserModel toUser,
-      {int resendingLimit = 4}) async {
-    _addMyMessageToChats(message);
-    final tryingLimit =
-        resendingLimit > 0 && resendingLimit < 8 ? resendingLimit : 4;
-    //^ the trying attmpts acceeds the limit
-    if (message.sendingAttmpts >= tryingLimit &&
-        message.senderHost == _server.host) {
-      message.messageStates = MessageStates.failed;
-      _addMyMessageToChats(message);
-      return;
-    }
-    if (message.senderHost != _server.host) message.sendingAttmpts = 0;
-
-    //^ increase the number of sending attmpts
-    message.sendingAttmpts++;
-    final int clientIndex = _getClientIindex(toUser.host);
-    //^ the client is new
-    if (clientIndex == -1) {
-      await startChat(toUser);
-      await sendMessage(message, toUser);
-    }
-    //^ the client already exist
-    else {
-      clients[clientIndex].sendMapped(message.toJson());
-    }
-  }
-
-  void _addMyMessageToChats(MessageModel message) {
-    int chatIndex = getChatIndex(message.receiverHost);
-    int messageIndex = _getMessageIndex(chatIndex, message.dateTime);
-    if (chatIndex == -1) {
-      print("[+] chat not found _addMyMessageToChats");
-      return;
-    }
-    //^ new message
-    if (messageIndex == -1) {
-      chats[chatIndex].messages.add(message);
-    }
-    //^ update existed message
-    else {
-      chats[chatIndex].messages[messageIndex] = message;
-    }
-
+  Future<void> startChat(
+    UserModel withUser, {
+    void Function()? onFailed,
+  }) async {
     try {
+      int clientIndex = _getClientIindex(withUser.host);
+      //^ the user is new
+      if (clientIndex == -1) {
+        final client =
+            ClientSocketServices(host: withUser.host, name: withUser.name);
+        bool success = false;
+        await client.connect(
+          onConnectionFailed: _onConnectionFailed,
+          onConnectionSuccess: (_) async {
+            clients.add(client);
+            await ChatBoxHelper.createChat(withUser);
+            success = true;
+          },
+        );
+        if (!success) {
+          onFailed?.call();
+          return;
+        }
+      }
+    } catch (e) {
+      print('[+] error in chat provider : $e');
+    }
+  }
+
+  Future<void> sendMessage(
+    MessageModel message,
+    UserModel toUser, {
+    int resendingLimit = 4,
+  }) async {
+    //todo: add my message using hive
+    try {
+      if (message.senderHost == _server.host) {
+        await ChatBoxHelper.addChatMessage(toUser, message);
+        notifyListeners();
+      }
+      final tryingLimit =
+          resendingLimit > 0 && resendingLimit < 8 ? resendingLimit : 4;
+      //^ the trying attmpts acceeds the limit
+      if (message.sendingAttmpts >= tryingLimit &&
+          message.senderHost == _server.host &&
+          message.receiverHost != _server.host) {
+        message.messageStates = MessageStates.failed;
+        await ChatBoxHelper.addChatMessage(toUser, message);
+        return;
+      } else if (message.sendingAttmpts >= tryingLimit &&
+          message.senderHost == _server.host &&
+          message.receiverHost == _server.host) {
+        message.messageStates = MessageStates.failed;
+        await ChatBoxHelper.addChatMessage(toUser, message);
+        return;
+      } else if (message.senderHost != _server.host &&
+          message.receiverHost != _server.host) {
+        return;
+      } else if (message.sendingAttmpts >= tryingLimit &&
+          message.senderHost != _server.host) {
+        // message.sendingAttmpts = 0;
+        message.messageStates = MessageStates.delivered;
+        await ChatBoxHelper.addChatMessage(toUser, message);
+        return;
+      }
+
+      //^ increase the number of sending attmpts
+      message.sendingAttmpts++;
+      final int clientIndex = _getClientIindex(toUser.host);
+      //^ the client is new
+      if (clientIndex == -1) {
+        await startChat(toUser);
+        await sendMessage(message, toUser);
+        print(
+            '[+] From sendMessage() : sending Attmpts = [${message.sendingAttmpts}]');
+      }
+      //^ the client already exist
+      else {
+        clients[clientIndex].sendMapped(
+          message.toJson(),
+          onError: (error) {
+            if (error.message == "Socket has been closed") {
+              clients.removeAt(clientIndex).disconnect().onError((_, __) {
+                clients.removeAt(clientIndex);
+              }).then((_) async {
+                await sendMessage(message, toUser);
+              });
+            } else {}
+          },
+        );
+      }
+      await Future.delayed(const Duration(milliseconds: 100));
       notifyListeners();
-    } catch (_) {}
+    } catch (e) {
+      print('[+] error from chat provider send the message');
+    }
   }
 
   void _onClientConnected(Socket client) async {
-    // final int clientIndex = _getClientIindex(client.remoteAddress.address);
     if (clients.any((c) => c.host == client.remoteAddress.address)) {
-      return;
+      clients.removeWhere((c) => c.host == client.remoteAddress.address);
     }
     //^ new client
-    else {
-      final newClient =
-          ClientSocketServices(host: client.remoteAddress.address, name: '');
-      await newClient.connect(
-          onConnectionFailed: _onConnectionFailed,
-          onConnectionSuccess: (_) => clients.add(newClient));
+    if (client.address.address == _server.host) {
+      return;
     }
+    final newClient =
+        ClientSocketServices(host: client.remoteAddress.address, name: '');
+    await newClient.connect(
+        onConnectionFailed: _onConnectionFailed,
+        onConnectionSuccess: (_) => clients.add(newClient));
   }
 
   void _onClientDisconnected(Socket socket) {
-    int clientIndex = _getClientIindex(socket.remoteAddress.address);
-    if (clientIndex == -1) return;
     try {
+      int clientIndex = _getClientIindex(socket.remoteAddress.address);
+      if (clientIndex == -1) return;
+      // clients.removeAt(clientIndex).disconnect();
       clients.removeAt(clientIndex).disconnect();
     } catch (e) {
       print('[+] (ChatProvider) Error disconnecting :$e');
     }
   }
 
-  void _onObjectReceived(dynamic object) {
+  void _onObjectReceived(dynamic object) async {
     if (object[JsonKeys.modelType] == ModelTypes.xoInvitation.name) {
-      _onMessageReceived(XOInvitationModel.fromJson(object));
+      await _onMessageReceived(XOInvitationModel.fromJson(object));
     } else if (object[JsonKeys.modelType] == ModelTypes.message.name) {
-      _onMessageReceived(MessageModel.fromJson(object));
+      await _onMessageReceived(MessageModel.fromJson(object));
     }
+    notifyListeners();
   }
 
   MessageModel? receivedMsg;
-  void _onMessageReceived(MessageModel message) {
+  Future<void> _onMessageReceived(MessageModel message) async {
     //^ this is my updated message
     if (message.senderHost == _server.host) {
       print(
@@ -166,44 +204,42 @@ class ChatProvider extends ChangeNotifier {
       _updateMyMessageStatus(message);
       //^ not my message
     } else {
-      int chatIndex = getChatIndex(message.senderHost);
-
-      _showNotification(chatIndex, message);
+      _showNotification(message);
       //^ if its new user
-      if (chatIndex == -1) {
-        print("[+] chat not found onMessageReceived");
-        final user = UserModel(
-            host: message.senderHost,
-            port: ServerSocketServices.port,
-            id: const Uuid().v1(),
-            name: message.senderName);
-        var chat = ChatModel(withUser: user);
-        chat.messages.add(message);
-        chats.add(chat);
-        startChat(user);
-        _updateMessageStatusToDelivered(message, chat.withUser);
-        //^ if the user already exist
-      } else {
-        if (chats[chatIndex].withUser.name != message.senderName) {
-          chats[chatIndex].withUser.name = message.senderName;
-        }
-        chats[chatIndex].messages.add(message);
-        _updateMessageStatusToDelivered(message, chats[chatIndex].withUser);
+      print("[+] chat not found onMessageReceived");
+      final user = UserModel(
+          host: message.senderHost,
+          port: ServerSocketServices.port,
+          id: const Uuid().v1(),
+          name: message.senderName,
+          discoveredDateTime: DateTime.now());
+
+      var chat = await ChatBoxHelper.createChat(user);
+      await startChat(user);
+
+      //^ if the user already exist
+      if (chat.withUser.name != message.senderName) {
+        user.name = message.senderName;
+        ChatBoxHelper.updateUser(user);
       }
+      await _updateMessageStatusToDelivered(message, user);
+      print('[**] send delivered 2');
+      await ChatBoxHelper.addChatMessage(user, message);
+      print('[**] message added 2');
     }
-    notifyListeners();
   }
 
-  _showNotification(int chatIndex, MessageModel message) {
-    if (inChatIndex != chatIndex) {
+  void _showNotification(MessageModel message) {
+    if (message.senderHost != inChatWithUserhost) {
       NotificationService()
           .showNotification(title: message.senderName, body: message.content);
     }
   }
 
-  void _updateMyMessageStatus(MessageModel message) {
-    int chatIndex = getChatIndex(message.receiverHost);
-    for (MessageModel myMsg in chats[chatIndex].messages) {
+  Future<void> _updateMyMessageStatus(MessageModel message) async {
+    var messages =
+        await ChatBoxHelper.getUserMessagesByHost(message.receiverHost);
+    for (MessageModel myMsg in messages) {
       if (myMsg.messageStates != MessageStates.read &&
           myMsg.messageStates != message.messageStates) {
         myMsg.messageStates = message.messageStates;
@@ -211,38 +247,42 @@ class ChatProvider extends ChangeNotifier {
       if (myMsg.dateTime == message.dateTime) {
         myMsg.messageStates = message.messageStates;
         if (message is XOInvitationModel && myMsg is XOInvitationModel) {
-          myMsg.state = message.state;
+          myMsg = message;
         }
         break;
       }
     }
+    await ChatBoxHelper.updateMessages(message.receiverHost, messages);
   }
 
-  void _updateMessageStatusToRead(MessageModel message, UserModel user) {
-    if (message.messageStates == MessageStates.read) {
-      return;
-    } else {
+  Future<void> _updateMessageStatusToRead(
+      MessageModel message, UserModel user) async {
+    if (message.messageStates == MessageStates.delivered) {
       message.messageStates = MessageStates.read;
-      sendMessage(message, user);
+      await sendMessage(message, user);
+    } else {
+      return;
     }
   }
 
-  void _updateMessageStatusToDelivered(MessageModel message, UserModel user) {
-    if (message.messageStates == MessageStates.read ||
-        message.messageStates == MessageStates.delivered) {
-      return;
-    } else {
+  Future<void> _updateMessageStatusToDelivered(
+      MessageModel message, UserModel user) async {
+    if ((message.messageStates == MessageStates.sending ||
+            message.messageStates == MessageStates.sent) &&
+        message.senderHost != _server.host) {
       message.messageStates = MessageStates.delivered;
-      sendMessage(message, user);
+      await sendMessage(message, user);
+    } else {
+      return;
     }
   }
 
   void _onConnectionFailed(error, Socket? client) {
-    final int clientInext = _getClientIindex(client?.address.address ?? '');
-
-    if (clientInext == -1) return;
     try {
-      clients.removeAt(clientInext).disconnect();
+      final int clientIndex = _getClientIindex(client?.address.address ?? '');
+      if (clientIndex == -1) return;
+      // clients.removeAt(clientIndex).disconnect();
+      clients.removeAt(clientIndex);
     } catch (e) {
       print('[+] (chat_provider): Error :$e');
     }
@@ -250,16 +290,5 @@ class ChatProvider extends ChangeNotifier {
 
   int _getClientIindex(String host) {
     return clients.indexWhere((client) => client.host == host);
-  }
-
-  int _getMessageIndex(int chatIndex, DateTime messageDateTime) {
-    if (chatIndex == -1) return -1;
-    return chats[chatIndex]
-        .messages
-        .lastIndexWhere((msg) => msg.dateTime == messageDateTime);
-  }
-
-  int getChatIndex(String withUserHost) {
-    return chats.indexWhere((chat) => chat.withUser.host == withUserHost);
   }
 }

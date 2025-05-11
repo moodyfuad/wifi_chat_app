@@ -1,5 +1,5 @@
 TODO:
-1 - restructure the app fields
+1 - restructure the app fields ✔️
 2 - chech the async await methods
 3 - implement the hive storage 
 4 - error handling accros the app

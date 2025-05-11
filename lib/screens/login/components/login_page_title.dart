@@ -19,9 +19,9 @@ class LoginPageTitle extends StatelessWidget {
               letterSpacing: 20,
               shadows: [
                 Shadow(
-                  color: Colors.black,
-                  offset: Offset(0, 1),
-                  blurRadius: 3,
+                  color: Colors.pink,
+                  offset: Offset(1, 1),
+                  blurRadius: 10,
                 ),
               ],
             ),

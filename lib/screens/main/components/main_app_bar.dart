@@ -41,17 +41,19 @@ AppBar getMainAppBar({String? title, required BuildContext context}) {
 
 Widget _getLogoutWidget(BuildContext context) {
   return GestureDetector(
-    onTap: () => _showLogoutDialog(context),
+    onTap: () async => await showLogoutDialog(context),
     child: const Icon(Icons.logout),
   );
 }
 
-_showLogoutDialog(BuildContext context) {
-  return showAdaptiveDialog(
+Future<bool> showLogoutDialog(BuildContext context,
+    [String? txt = null]) async {
+  bool result = true;
+  await showAdaptiveDialog(
     context: context,
     builder: (context) {
       return AlertDialog.adaptive(
-        title: const Text('Go Back To Login? '),
+        title: Text(txt ?? 'Go Back To Login? '),
         actions: [
           ElevatedButton(
             onPressed: () {
@@ -64,15 +66,21 @@ _showLogoutDialog(BuildContext context) {
                 MaterialPageRoute(builder: (_) => const LoginScreen()),
                 (route) => false,
               );
+              result = false;
             },
             child: const Text('Yes'),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () {
+              Navigator.of(context).pop();
+              result = true;
+            },
             child: const Text('No'),
           ),
         ],
       );
     },
   );
+
+  return result;
 }
